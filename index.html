@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDA Simulator</title>
+
+  <style>
+    /* ─── Base reset and font ─── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 28px 16px;
+    }
+
+    /* ─── Layout ─── */
+    .page-wrapper {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 24px;
+    }
+
+    /* Two cards side by side */
+    .two-col {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .two-col .card {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    /* ─── Card component ─── */
+    .card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    /* ─── Form controls ─── */
+    select,
+    input[type="text"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: box-shadow 0.15s;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      box-shadow: 0 0 0 2px #7F77DD;
+    }
+
+    /* Input + button side by side */
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-with-button input {
+      flex: 1;
+    }
+
+    /* ─── Buttons ─── */
+    button {
+      padding: 9px 18px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #f0f0ee;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    /* The main Step button stands out in purple */
+    button.btn-primary {
+      background: #EEEDFE;
+      border-color: #7F77DD;
+      color: #3C3489;
+      font-weight: 600;
+    }
+
+    button.btn-primary:hover {
+      background: #dddcfc;
+    }
+
+    /* Controls row */
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── Description box ─── */
+    .description-box {
+      background: #EAF3DE;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #27500A;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    /* Small info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+
+    .info-box {
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .info-box .value {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      font-family: 'Courier New', monospace;
+      margin-top: 3px;
+    }
+
+    /* ─── State diagram circles ─── */
+    .states-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .state-bubble {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      background: #fff;
+      color: #1a1a1a;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    /* Accept states have a thicker double border */
+    .state-bubble.is-accept-state {
+      border-width: 4px;
+    }
+
+    /* Currently active state */
+    .state-bubble.is-current {
+      background: #EEEDFE;
+      border-color: #7F77DD;
+      color: #3C3489;
+    }
+
+    /* Final result: accepted */
+    .state-bubble.result-accepted {
+      background: #E1F5EE;
+      border-color: #5DCAA5;
+      color: #085041;
+    }
+
+    /* Final result: rejected */
+    .state-bubble.result-rejected {
+      background: #FCEBEB;
+      border-color: #E24B4A;
+      color: #A32D2D;
+    }
+
+    .transition-arrow {
+      color: #bbb;
+      font-size: 20px;
+    }
+
+    /* ─── Input tape ─── */
+    .tape {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .tape-symbol {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 600;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Symbol currently being read */
+    .tape-symbol.is-current-symbol {
+      background: #EEEDFE;
+      border: 2px solid #7F77DD;
+      color: #3C3489;
+    }
+
+    /* Symbols already consumed */
+    .tape-symbol.already-read {
+      background: #f0f0ee;
+      color: #bbb;
+    }
+
+    /* ─── Stack visualization ─── */
+    .stack-display {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .stack-item {
+      width: 50px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Top of stack gets highlighted */
+    .stack-item.stack-top {
+      background: #E1F5EE;
+      border-color: #5DCAA5;
+      color: #085041;
+    }
+
+    /* ─── Transition table ─── */
+    .trans-table-header,
+    .trans-table-row {
+      display: grid;
+      grid-template-columns: 65px 48px 48px 1fr 58px;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+
+    .trans-table-header {
+      font-size: 11px;
+      color: #aaa;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      padding-bottom: 6px;
+    }
+
+    .trans-table-row {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      font-family: 'Courier New', monospace;
+      color: #1a1a1a;
+    }
+
+    .trans-table-row:last-child {
+      border-bottom: none;
+    }
+
+    /* The rule that was just fired */
+    .trans-table-row.is-active-transition {
+      background: #EEEDFE;
+      border-radius: 8px;
+      color: #3C3489;
+    }
+
+    /* ─── Simulation log ─── */
+    .log-container {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 170px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      color: #333;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    /* ─── Status badge ─── */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-badge.ready    { background: #f0f0ee; color: #777; }
+    .status-badge.running  { background: #EEEDFE; color: #3C3489; }
+    .status-badge.accepted { background: #E1F5EE; color: #085041; }
+    .status-badge.rejected { background: #FCEBEB; color: #A32D2D; }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #bbb;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+
+    <h1 class="page-title">PDA Simulator</h1>
+    <p class="page-subtitle">Pushdown Automaton — Theory of Computation | Step through transitions one by one</p>
+
+    <!-- Row 1: Choose PDA + Enter input string -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Choose a PDA</div>
+        <select id="pdaSelect" onchange="loadSelectedPDA()">
+          <option value="anbn">L = { a&#x207F;b&#x207F; | n &ge; 1 }</option>
+          <option value="palindrome">L = { ww^R } &mdash; even palindromes over {a, b}</option>
+          <option value="balanced">L = balanced parentheses</option>
+          <option value="anbn_empty">L = { a&#x207F;b&#x207F; | n &ge; 0 } &mdash; using &epsilon;-transitions</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Input string to test</div>
+        <div class="input-with-button">
+          <input type="text" id="inputString" value="aabb" placeholder="type a string..." />
+          <button class="btn-primary" onclick="resetSimulation()">Load</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: PDA description + info boxes -->
+    <div class="card">
+      <div id="descriptionText" class="description-box">
+        Accepts strings of the form a&#x207F;b&#x207F; &mdash; equal number of a's followed by b's
+      </div>
+      <div class="info-grid">
+        <div class="info-box">States         <span class="value" id="infoStates">q0, q1, q2</span></div>
+        <div class="info-box">Start state    <span class="value" id="infoStart">q0</span></div>
+        <div class="info-box">Accept states  <span class="value" id="infoAccept">q2</span></div>
+        <div class="info-box">Stack symbols  <span class="value" id="infoStackAlpha">Z, A</span></div>
+      </div>
+    </div>
+
+    <!-- Row 3: State diagram + Status -->
+    <div class="two-col">
+      <div class="card" style="flex: 2;">
+        <div class="card-title">Current state</div>
+        <div class="states-row" id="stateDiagram"></div>
+      </div>
+      <div class="card" style="flex: 1;">
+        <div class="card-title">Result</div>
+        <span class="status-badge running" id="statusBadge">running</span>
+        <div style="margin-top: 10px; font-size: 13px; color: #777;">
+          Steps taken: <strong id="stepCounter">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Input tape + Stack -->
+    <div class="two-col">
+      <div class="card" style="flex: 2;">
+        <div class="card-title">Input tape</div>
+        <div class="tape" id="tapeCells"></div>
+        <div style="margin-top: 10px; font-size: 12px; color: #777;">
+          Head at position: <strong id="headPosition">0</strong>
+          &nbsp;|&nbsp;
+          Remaining: <strong id="remainingInput"></strong>
+        </div>
+      </div>
+      <div class="card" style="flex: 1;">
+        <div class="card-title">Stack (top &rarr; bottom)</div>
+        <div class="stack-display" id="stackDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Row 5: Transition table + Log -->
+    <div class="two-col">
+      <div class="card" style="flex: 2;">
+        <div class="card-title">Transition function &delta;(state, input, pop) &rarr; (next state, push)</div>
+        <div class="trans-table-header">
+          <span>State</span>
+          <span>Input</span>
+          <span>Pop</span>
+          <span>Next state</span>
+          <span>Push</span>
+        </div>
+        <div id="transitionTable"></div>
+      </div>
+      <div class="card" style="flex: 1;">
+        <div class="card-title">Step-by-step log</div>
+        <div class="log-container" id="simulationLog"></div>
+      </div>
+    </div>
+
+    <!-- Row 6: Control buttons -->
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <div class="button-row">
+        <button class="btn-primary" onclick="doOneStep()">Step forward</button>
+        <button onclick="runToEnd()">Run all steps</button>
+        <button onclick="resetSimulation()">Reset</button>
+        <button onclick="loadAcceptedExample()">Load accepted example</button>
+        <button onclick="loadRejectedExample()">Load rejected example</button>
+      </div>
+    </div>
+
+    <footer>PDA Simulator &mdash; Theory of Computation Assignment</footer>
+
+  </div>
+
+
+  <script>
+
+    // =============================================================
+    //  PDA DEFINITIONS
+    //  Each PDA object contains:
+    //    - description: what language it accepts
+    //    - states: list of all state names
+    //    - startState: where simulation begins
+    //    - acceptStates: states that count as accepting
+    //    - stackAlphabet: symbols used on the stack
+    //    - goodExample / badExample: demo strings
+    //    - transitions: the actual rules
+    //
+    //  Each transition rule means:
+    //    "If in state FROM, reading READ from input,
+    //     and TOP of stack is POP,
+    //     then move to state TO and push PUSH onto stack."
+    //
+    //  'epsilon' (ε) means: don't read any input symbol
+    //  empty push ('') means: just pop, don't push anything back
+    // =============================================================
+
+    const allPDAs = {
+
+      anbn: {
+        description: "Accepts strings of the form aⁿbⁿ — equal number of a's followed by b's (e.g. aabb, aaabbb)",
+        states: ["q0", "q1", "q2"],
+        startState: "q0",
+        acceptStates: ["q2"],
+        stackAlphabet: "Z, A",
+        goodExample: "aaabbb",
+        badExample: "aab",
+        transitions: [
+          // Reading a's: push one A for each 'a' we see
+          { from: "q0", read: "a",  pop: "Z",  to: "q0",  push: "AZ"  },   // first 'a': push A, keep Z at bottom
+          { from: "q0", read: "a",  pop: "A",  to: "q0",  push: "AA"  },   // more a's: keep stacking A's
+
+          // Reading b's: pop one A for each 'b' we see
+          { from: "q0", read: "b",  pop: "A",  to: "q1",  push: ""    },   // first 'b': switch to q1, pop A
+          { from: "q1", read: "b",  pop: "A",  to: "q1",  push: ""    },   // more b's: keep popping A's
+
+          // When we reach the bottom of stack (Z), all b's matched all a's
+          { from: "q1", read: "ε",  pop: "Z",  to: "q2",  push: "Z"   },   // done! go to accept state
+        ]
+      },
+
+      palindrome: {
+        description: "Accepts even-length palindromes over {a,b} like 'abba' or 'aabbaa' — push first half, match reversed second half",
+        states: ["q0", "q1", "q2"],
+        startState: "q0",
+        acceptStates: ["q2"],
+        stackAlphabet: "Z, A, B",
+        goodExample: "abba",
+        badExample: "abab",
+        transitions: [
+          // Phase 1 (q0): push every symbol we read onto the stack
+          { from: "q0", read: "a",  pop: "Z",  to: "q0",  push: "AZ"  },
+          { from: "q0", read: "b",  pop: "Z",  to: "q0",  push: "BZ"  },
+          { from: "q0", read: "a",  pop: "A",  to: "q0",  push: "AA"  },
+          { from: "q0", read: "a",  pop: "B",  to: "q0",  push: "AB"  },
+          { from: "q0", read: "b",  pop: "A",  to: "q0",  push: "BA"  },
+          { from: "q0", read: "b",  pop: "B",  to: "q0",  push: "BB"  },
+
+          // Nondeterministically guess the middle point and switch to phase 2
+          { from: "q0", read: "ε",  pop: "Z",  to: "q1",  push: "Z"   },
+          { from: "q0", read: "ε",  pop: "A",  to: "q1",  push: "A"   },
+          { from: "q0", read: "ε",  pop: "B",  to: "q1",  push: "B"   },
+
+          // Phase 2 (q1): match remaining input against the stack (reversed)
+          { from: "q1", read: "a",  pop: "A",  to: "q1",  push: ""    },
+          { from: "q1", read: "b",  pop: "B",  to: "q1",  push: ""    },
+
+          // Stack is empty (only Z left) — we matched successfully
+          { from: "q1", read: "ε",  pop: "Z",  to: "q2",  push: "Z"   },
+        ]
+      },
+
+      balanced: {
+        description: "Accepts balanced parentheses strings — every '(' must have a matching closing ')'",
+        states: ["q0", "q1"],
+        startState: "q0",
+        acceptStates: ["q1"],
+        stackAlphabet: "Z, (",
+        goodExample: "(()())",
+        badExample: "(()",
+        transitions: [
+          { from: "q0", read: "(",  pop: "Z",  to: "q0",  push: "(Z"  },   // push ( when stack has Z
+          { from: "q0", read: "(",  pop: "(",  to: "q0",  push: "(("  },   // push another (
+          { from: "q0", read: ")",  pop: "(",  to: "q0",  push: ""    },   // ) matches (, pop it off
+          { from: "q0", read: "ε",  pop: "Z",  to: "q1",  push: "Z"   },   // nothing left to match, accept
+        ]
+      },
+
+      anbn_empty: {
+        description: "Accepts aⁿbⁿ including the empty string — uses epsilon transitions to handle n=0 case",
+        states: ["q0", "q1", "q2"],
+        startState: "q0",
+        acceptStates: ["q2"],
+        stackAlphabet: "Z, A",
+        goodExample: "aabb",
+        badExample: "aaab",
+        transitions: [
+          { from: "q0", read: "ε",  pop: "Z",  to: "q2",  push: "Z"   },   // empty string: accept immediately
+          { from: "q0", read: "a",  pop: "Z",  to: "q0",  push: "AZ"  },
+          { from: "q0", read: "a",  pop: "A",  to: "q0",  push: "AA"  },
+          { from: "q0", read: "b",  pop: "A",  to: "q1",  push: ""    },
+          { from: "q1", read: "b",  pop: "A",  to: "q1",  push: ""    },
+          { from: "q1", read: "ε",  pop: "Z",  to: "q2",  push: "Z"   },
+        ]
+      }
+
+    };
+
+
+    // =============================================================
+    //  SIMULATION STATE
+    //  This object holds everything about the current run
+    // =============================================================
+
+    let currentPDA = null;   // which PDA is loaded
+
+    let sim = {
+      currentState: "",         // which state we are in right now
+      inputChars: [],           // the input string as an array of characters
+      readHead: 0,              // index of the next character to read
+      stack: [],                // index 0 = top of stack
+      stepCount: 0,             // how many transitions have fired
+      isFinished: false,        // true when no more transitions possible
+      wasAccepted: false,       // final result
+      lastFiredTransition: -1   // index of the most recently fired rule
+    };
+
+
+    // =============================================================
+    //  LOADING A NEW PDA
+    // =============================================================
+
+    function loadSelectedPDA() {
+      const selectedKey = document.getElementById('pdaSelect').value;
+      currentPDA = allPDAs[selectedKey];
+
+      // Update the info panel at the top
+      document.getElementById('descriptionText').textContent  = currentPDA.description;
+      document.getElementById('infoStates').textContent       = currentPDA.states.join(', ');
+      document.getElementById('infoStart').textContent        = currentPDA.startState;
+      document.getElementById('infoAccept').textContent       = currentPDA.acceptStates.join(', ');
+      document.getElementById('infoStackAlpha').textContent   = currentPDA.stackAlphabet;
+
+      // Pre-fill the input box with the good example for this PDA
+      document.getElementById('inputString').value = currentPDA.goodExample;
+
+      buildTransitionTable();
+      resetSimulation();
+    }
+
+    // Builds the HTML rows for the transition table
+    function buildTransitionTable() {
+      const tableDiv = document.getElementById('transitionTable');
+      tableDiv.innerHTML = '';
+
+      currentPDA.transitions.forEach(function(rule, index) {
+        const row = document.createElement('div');
+        row.className = 'trans-table-row';
+        row.id = 'transition-row-' + index;
+
+        row.innerHTML =
+          '<span>' + rule.from + '</span>' +
+          '<span>' + rule.read + '</span>' +
+          '<span>' + rule.pop  + '</span>' +
+          '<span>' + rule.to   + '</span>' +
+          '<span>' + (rule.push || 'ε') + '</span>';
+
+        tableDiv.appendChild(row);
+      });
+    }
+
+
+    // =============================================================
+    //  RESET — start simulation from scratch
+    // =============================================================
+
+    function resetSimulation() {
+      // If first time (page load), initialize currentPDA
+      if (!currentPDA) {
+        const defaultKey = document.getElementById('pdaSelect').value;
+        currentPDA = allPDAs[defaultKey];
+        buildTransitionTable();
+        document.getElementById('descriptionText').textContent = currentPDA.description;
+        document.getElementById('infoStates').textContent      = currentPDA.states.join(', ');
+        document.getElementById('infoStart').textContent       = currentPDA.startState;
+        document.getElementById('infoAccept').textContent      = currentPDA.acceptStates.join(', ');
+        document.getElementById('infoStackAlpha').textContent  = currentPDA.stackAlphabet;
+      }
+
+      const userInput = document.getElementById('inputString').value.trim();
+
+      // Reset everything to initial state
+      sim.currentState          = currentPDA.startState;
+      sim.inputChars            = userInput === '' ? [] : userInput.split('');
+      sim.readHead              = 0;
+      sim.stack                 = ['Z'];   // Z is the bottom-of-stack marker
+      sim.stepCount             = 0;
+      sim.isFinished            = false;
+      sim.wasAccepted           = false;
+      sim.lastFiredTransition   = -1;
+
+      // Clear old log entries
+      document.getElementById('simulationLog').innerHTML = '';
+
+      // Reset the status badge
+      setStatusBadge('running', 'running');
+      document.getElementById('stepCounter').textContent = '0';
+
+      // Draw the initial state on screen
+      drawAll();
+
+      addLogEntry('Loaded: "' + userInput + '"  |  Start state: ' + sim.currentState + '  |  Stack: [Z]');
+    }
+
+
+    // =============================================================
+    //  FINDING A MATCHING TRANSITION RULE
+    // =============================================================
+
+    function findMatchingTransition(state, inputSymbol, topOfStack) {
+      // 1. Try to find an exact match (reading real input symbol)
+      for (let i = 0; i < currentPDA.transitions.length; i++) {
+        const rule = currentPDA.transitions[i];
+        if (rule.from === state && rule.read === inputSymbol && rule.pop === topOfStack) {
+          return i;   // found it, return the index
+        }
+      }
+
+      // 2. If no exact match, try an epsilon transition (don't consume input)
+      for (let i = 0; i < currentPDA.transitions.length; i++) {
+        const rule = currentPDA.transitions[i];
+        if (rule.from === state && rule.read === 'ε' && rule.pop === topOfStack) {
+          return i;
+        }
+      }
+
+      return -1;   // no transition found at all
+    }
+
+
+    // =============================================================
+    //  EXECUTE ONE STEP OF THE SIMULATION
+    // =============================================================
+
+    function doOneStep() {
+      if (sim.isFinished) return;   // nothing left to do
+
+      const topOfStack    = sim.stack[0] || '';
+      const currentSymbol = sim.readHead < sim.inputChars.length
+                              ? sim.inputChars[sim.readHead]
+                              : 'ε';   // treat end-of-input as epsilon
+
+      // Look for a rule that matches our current situation
+      let ruleIndex = findMatchingTransition(sim.currentState, currentSymbol, topOfStack);
+
+      // If no rule for the current input symbol, try epsilon as fallback
+      if (ruleIndex === -1 && currentSymbol !== 'ε') {
+        ruleIndex = findMatchingTransition(sim.currentState, 'ε', topOfStack);
+      }
+
+      // Still no rule? Simulation is stuck — check if we accept or reject
+      if (ruleIndex === -1) {
+        finishSimulation();
+        return;
+      }
+
+      // ── Fire the transition ──
+      const rule      = currentPDA.transitions[ruleIndex];
+      const prevState = sim.currentState;
+
+      sim.lastFiredTransition = ruleIndex;
+
+      // Advance read head only if we actually consumed an input symbol
+      if (rule.read !== 'ε') {
+        sim.readHead++;
+      }
+
+      // Pop the top of stack
+      sim.stack.shift();
+
+      // Push new symbols (rule.push is a string like "AZ", push right-to-left so A ends up on top)
+      const symbolsToPush = rule.push.split('').reverse();
+      symbolsToPush.forEach(function(sym) {
+        if (sym !== '') sim.stack.unshift(sym);
+      });
+
+      // Move to the next state
+      sim.currentState = rule.to;
+      sim.stepCount++;
+      document.getElementById('stepCounter').textContent = sim.stepCount;
+
+      // Add a log entry showing what just happened
+      addLogEntry(
+        'Step ' + sim.stepCount + ':  (' + prevState + ', ' +
+        (rule.read === 'ε' ? 'ε' : rule.read) + ', ' + rule.pop +
+        ') → (' + rule.to + ', ' + (rule.push || 'ε') + ')' +
+        '    Stack: [' + sim.stack.join(', ') + ']'
+      );
+
+      // If all input is consumed, check if any epsilon transitions remain
+      // If not, we're done
+      if (sim.readHead >= sim.inputChars.length) {
+        const nextEpsilonRule = findMatchingTransition(sim.currentState, 'ε', sim.stack[0] || '');
+        if (nextEpsilonRule === -1) {
+          finishSimulation();
+        }
+      }
+
+      drawAll();
+    }
+
+
+    // =============================================================
+    //  FINISH SIMULATION — determine accept or reject
+    // =============================================================
+
+    function finishSimulation() {
+      sim.isFinished = true;
+
+      // We accept if:
+      //   1. We are in an accept state
+      //   2. We have read all of the input
+      //   3. The stack only has the bottom marker Z (or is empty)
+      const allInputConsumed = (sim.readHead >= sim.inputChars.length);
+      const stackIsAtBottom  = (sim.stack.length === 0 || sim.stack[0] === 'Z');
+      const inAcceptState    = currentPDA.acceptStates.includes(sim.currentState);
+
+      sim.wasAccepted = inAcceptState && allInputConsumed && stackIsAtBottom;
+
+      if (sim.wasAccepted) {
+        setStatusBadge('accepted', 'ACCEPTED');
+        addLogEntry('==> String ACCEPTED ✓');
+      } else {
+        setStatusBadge('rejected', 'REJECTED');
+        addLogEntry('==> String REJECTED ✗  (stuck — no valid transition)');
+      }
+
+      drawAll();
+    }
+
+    // Run every step automatically until done
+    function runToEnd() {
+      let safetyLimit = 0;
+      while (!sim.isFinished && safetyLimit < 500) {
+        doOneStep();
+        safetyLimit++;
+      }
+    }
+
+    // Shortcut buttons to load example strings
+    function loadAcceptedExample() {
+      const key = document.getElementById('pdaSelect').value;
+      document.getElementById('inputString').value = allPDAs[key].goodExample;
+      resetSimulation();
+    }
+
+    function loadRejectedExample() {
+      const key = document.getElementById('pdaSelect').value;
+      document.getElementById('inputString').value = allPDAs[key].badExample;
+      resetSimulation();
+    }
+
+
+    // =============================================================
+    //  DRAWING / RENDERING THE UI
+    // =============================================================
+
+    // Redraw everything at once
+    function drawAll() {
+      drawStateDiagram();
+      drawTape();
+      drawStack();
+      highlightActiveTransition();
+    }
+
+    // Draw the row of state circles
+    function drawStateDiagram() {
+      const container = document.getElementById('stateDiagram');
+      container.innerHTML = '';
+
+      currentPDA.states.forEach(function(stateName, index) {
+        const circle = document.createElement('div');
+        circle.className = 'state-bubble';
+
+        const isAcceptState  = currentPDA.acceptStates.includes(stateName);
+        const isCurrentState = (sim.currentState === stateName);
+
+        // Accept states get a thick double border
+        if (isAcceptState) {
+          circle.classList.add('is-accept-state');
+        }
+
+        // Current state gets highlighted
+        if (isCurrentState) {
+          if (sim.isFinished) {
+            // Show green or red depending on result
+            circle.classList.add(sim.wasAccepted ? 'result-accepted' : 'result-rejected');
+          } else {
+            circle.classList.add('is-current');
+          }
+        }
+
+        circle.textContent = stateName;
+        container.appendChild(circle);
+
+        // Add arrow between states (not after the last one)
+        if (index < currentPDA.states.length - 1) {
+          const arrow = document.createElement('span');
+          arrow.className = 'transition-arrow';
+          arrow.textContent = '→';
+          container.appendChild(arrow);
+        }
+      });
+    }
+
+    // Draw the input tape with the read head highlighted
+    function drawTape() {
+      const tapeDiv = document.getElementById('tapeCells');
+      tapeDiv.innerHTML = '';
+
+      // Handle empty input
+      if (sim.inputChars.length === 0) {
+        tapeDiv.innerHTML = '<span style="font-size: 13px; color: #aaa;">empty string (&epsilon;)</span>';
+        document.getElementById('headPosition').textContent = 'end';
+        document.getElementById('remainingInput').textContent = 'ε';
+        return;
+      }
+
+      // Draw each character as a cell
+      sim.inputChars.forEach(function(character, index) {
+        const cell = document.createElement('div');
+        cell.className = 'tape-symbol';
+
+        if (index === sim.readHead) {
+          cell.classList.add('is-current-symbol');   // currently being read
+        } else if (index < sim.readHead) {
+          cell.classList.add('already-read');         // already consumed
+        }
+
+        cell.textContent = character;
+        tapeDiv.appendChild(cell);
+      });
+
+      // Update info below tape
+      const headAtEnd = (sim.readHead >= sim.inputChars.length);
+      document.getElementById('headPosition').textContent = headAtEnd ? 'end' : sim.readHead;
+      document.getElementById('remainingInput').textContent = headAtEnd
+        ? 'ε (all read)'
+        : sim.inputChars.slice(sim.readHead).join('');
+    }
+
+    // Draw the stack with top element highlighted
+    function drawStack() {
+      const stackDiv = document.getElementById('stackDisplay');
+      stackDiv.innerHTML = '';
+
+      if (sim.stack.length === 0) {
+        stackDiv.innerHTML = '<span style="font-size: 13px; color: #aaa;">empty</span>';
+        return;
+      }
+
+      sim.stack.forEach(function(symbol, index) {
+        const item = document.createElement('div');
+        item.className = 'stack-item';
+
+        if (index === 0) {
+          item.classList.add('stack-top');   // index 0 is the top of the stack
+        }
+
+        item.textContent = symbol;
+        stackDiv.appendChild(item);
+      });
+    }
+
+    // Highlight the transition row that just fired
+    function highlightActiveTransition() {
+      // Clear all highlights first
+      document.querySelectorAll('.trans-table-row').forEach(function(row) {
+        row.classList.remove('is-active-transition');
+      });
+
+      // Highlight the active one
+      if (sim.lastFiredTransition >= 0) {
+        const activeRow = document.getElementById('transition-row-' + sim.lastFiredTransition);
+        if (activeRow) {
+          activeRow.classList.add('is-active-transition');
+          activeRow.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+
+
+    // =============================================================
+    //  SMALL HELPER FUNCTIONS
+    // =============================================================
+
+    // Add a line to the simulation log
+    function addLogEntry(message) {
+      const logDiv = document.getElementById('simulationLog');
+      const entry  = document.createElement('div');
+      entry.className  = 'log-entry';
+      entry.textContent = message;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;   // scroll to bottom
+    }
+
+    // Update the status badge (ready / running / accepted / rejected)
+    function setStatusBadge(cssClass, text) {
+      const badge = document.getElementById('statusBadge');
+      badge.className  = 'status-badge ' + cssClass;
+      badge.textContent = text;
+    }
+
+
+    // =============================================================
+    //  START — load the default PDA when page opens
+    // =============================================================
+    loadSelectedPDA();
+
+  </script>
+</body>
+</html>
