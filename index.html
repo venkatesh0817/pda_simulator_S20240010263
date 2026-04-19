@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PDA Simulator — Theory of Computation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #ebebeb;
+    --text: #1a1a1a;
+    --text2: #555;
+    --text3: #999;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --purple-bg: #EEEDFE;
+    --purple-border: #7F77DD;
+    --purple-text: #3C3489;
+    --teal-bg: #E1F5EE;
+    --teal-border: #5DCAA5;
+    --teal-text: #085041;
+    --red-bg: #FCEBEB;
+    --red-border: #E24B4A;
+    --red-text: #A32D2D;
+    --green-bg: #EAF3DE;
+    --green-text: #27500A;
+    --mono: 'Courier New', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e;
+      --bg2: #2a2a2a;
+      --bg3: #333;
+      --text: #f0f0f0;
+      --text2: #aaa;
+      --text3: #666;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --purple-bg: #2a2860;
+      --purple-border: #7F77DD;
+      --purple-text: #CECBF6;
+      --teal-bg: #0a3028;
+      --teal-border: #5DCAA5;
+      --teal-text: #9FE1CB;
+      --red-bg: #3a1010;
+      --red-border: #E24B4A;
+      --red-text: #F09595;
+      --green-bg: #1a2e0a;
+      --green-text: #C0DD97;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 24px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+  }
+
+  .card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text3);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row > .card { flex: 1; min-width: 200px; }
+
+  select, input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  select:focus, input:focus { box-shadow: 0 0 0 2px var(--purple-border); }
+
+  .input-row { display: flex; gap: 8px; }
+  .input-row input { flex: 1; }
+
+  button {
+    padding: 8px 16px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, transform 0.08s;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--bg2); }
+  button:active { transform: scale(0.97); }
+  button.primary {
+    background: var(--purple-bg);
+    border-color: var(--purple-border);
+    color: var(--purple-text);
+    font-weight: 500;
+  }
+
+  .state-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .state-circle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500;
+    border: 2px solid var(--border2);
+    color: var(--text);
+    background: var(--bg);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .state-circle.accept { border-width: 4px; }
+  .state-circle.active { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple-text); }
+  .state-circle.done-accept { background: var(--teal-bg); border-color: var(--teal-border); color: var(--teal-text); }
+  .state-circle.done-reject { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+  .arrow { color: var(--text3); font-size: 18px; }
+
+  .tape-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tape-cell {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 500;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+  }
+  .tape-cell.current { background: var(--purple-bg); border: 2px solid var(--purple-border); color: var(--purple-text); }
+  .tape-cell.read { background: var(--bg2); color: var(--text3); }
+
+  .stack-col { display: flex; flex-direction: column; gap: 4px; }
+  .stack-cell {
+    width: 48px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 500;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    font-family: var(--mono);
+  }
+  .stack-cell.top { background: var(--teal-bg); border-color: var(--teal-border); color: var(--teal-text); }
+
+  .trans-header, .trans-row {
+    display: grid;
+    grid-template-columns: 70px 50px 50px 1fr 60px;
+    gap: 6px;
+    align-items: center;
+    padding: 5px 6px;
+    font-size: 13px;
+  }
+  .trans-header { font-size: 11px; color: var(--text3); padding-bottom: 4px; border-bottom: 0.5px solid var(--border); }
+  .trans-row { border-bottom: 0.5px solid var(--border); font-family: var(--mono); }
+  .trans-row:last-child { border-bottom: none; }
+  .trans-row.highlight { background: var(--purple-bg); border-radius: var(--radius); color: var(--purple-text); }
+
+  .log-box {
+    font-family: var(--mono);
+    font-size: 12px;
+    max-height: 160px;
+    overflow-y: auto;
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 8px;
+  }
+  .log-line { padding: 2px 0; border-bottom: 0.5px solid var(--border); color: var(--text); }
+  .log-line:last-child { border-bottom: none; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge-ready { background: var(--bg2); color: var(--text2); }
+  .badge-running { background: var(--purple-bg); color: var(--purple-text); }
+  .badge-accept { background: var(--teal-bg); color: var(--teal-text); }
+  .badge-reject { background: var(--red-bg); color: var(--red-text); }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+  .desc-box {
+    padding: 8px 12px;
+    background: var(--green-bg);
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--green-text);
+    font-weight: 500;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .info-cell {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .info-cell span { display: block; font-size: 15px; font-weight: 500; color: var(--text); font-family: var(--mono); margin-top: 2px; }
+
+  footer {
+    max-width: 900px;
+    margin: 24px auto 0;
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .trans-header, .trans-row { grid-template-columns: 55px 36px 36px 1fr 46px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PDA Simulator</h1>
+  <p>Pushdown Automaton — Theory of Computation interactive simulator</p>
+</header>
+
+<div class="container">
+
+  <div class="row">
+    <div class="card">
+      <div class="card-label">PDA example</div>
+      <select id="pdaSelect" onchange="loadPDA()">
+        <option value="anbn">L = { aⁿbⁿ | n ≥ 1 }</option>
+        <option value="palindrome">L = { ww^R | w ∈ {a,b}* } (even palindromes)</option>
+        <option value="balanced">L = balanced parentheses</option>
+        <option value="anbncn">L = { aⁿbⁿ | n ≥ 0 } (with empty stack)</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-label">Input string</div>
+      <div class="input-row">
+        <input type="text" id="inputStr" value="aabb" placeholder="Enter string..."/>
+        <button class="primary" onclick="initSim()">Load</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="descBox" class="desc-box">Accepts strings of the form aⁿbⁿ where n ≥ 1</div>
+    <div class="info-grid">
+      <div class="info-cell">States <span id="infoStates">q0, q1, q2</span></div>
+      <div class="info-cell">Start state <span id="infoStart">q0</span></div>
+      <div class="info-cell">Accept states <span id="infoAccept">q2</span></div>
+      <div class="info-cell">Stack alphabet <span id="infoStack">Z, A</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card" style="flex:2;min-width:260px;">
+      <div class="card-label">Current state</div>
+      <div class="state-row" id="stateViz"></div>
+    </div>
+    <div class="card" style="flex:1;min-width:120px;">
+      <div class="card-label">Status</div>
+      <span id="statusBadge" class="badge badge-ready">ready</span>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2);">Step: <strong id="stepCount">0</strong></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card" style="flex:2;">
+      <div class="card-label">Input tape</div>
+      <div class="tape-row" id="tapeViz"></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2);">
+        Reading position: <strong id="headPos">0</strong> &nbsp;|&nbsp;
+        Remaining: <strong id="remaining"></strong>
+      </div>
+    </div>
+    <div class="card" style="flex:1;">
+      <div class="card-label">Stack (top → bottom)</div>
+      <div class="stack-col" id="stackViz"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card" style="flex:2;">
+      <div class="card-label">Transition function δ(state, input, stack-top) → (next-state, push)</div>
+      <div class="trans-header">
+        <span>State</span><span>Input</span><span>Pop</span><span>Next state</span><span>Push</span>
+      </div>
+      <div id="transTable"></div>
+    </div>
+    <div class="card" style="flex:1;">
+      <div class="card-label">Simulation log</div>
+      <div class="log-box" id="simLog"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Controls</div>
+    <div class="btn-row">
+      <button class="primary" onclick="stepSim()">Step →</button>
+      <button onclick="runAll()">Run all</button>
+      <button onclick="initSim()">Reset</button>
+      <button onclick="tryExample('accept')">Try accepted example</button>
+      <button onclick="tryExample('reject')">Try rejected example</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>PDA Simulator &mdash; Theory of Computation &mdash; Built for academic use</footer>
+
+<script>
+const PDAS = {
+  anbn: {
+    desc: "Accepts strings of the form aⁿbⁿ where n ≥ 1 — pushes A for each 'a', pops A for each 'b'",
+    states: ["q0","q1","q2"],
+    start: "q0",
+    accept: ["q2"],
+    stackAlpha: "Z, A",
+    examples: { accept: "aaabbb", reject: "aab" },
+    transitions: [
+      {from:"q0", input:"a", pop:"Z", push:"AZ", to:"q0"},
+      {from:"q0", input:"a", pop:"A", push:"AA", to:"q0"},
+      {from:"q0", input:"b", pop:"A", push:"",   to:"q1"},
+      {from:"q1", input:"b", pop:"A", push:"",   to:"q1"},
+      {from:"q1", input:"ε", pop:"Z", push:"Z",  to:"q2"},
+    ]
+  },
+  palindrome: {
+    desc: "Accepts even-length palindromes ww^R over {a,b} — push first half, match second half",
+    states: ["q0","q1","q2"],
+    start: "q0",
+    accept: ["q2"],
+    stackAlpha: "Z, A, B",
+    examples: { accept: "abba", reject: "abab" },
+    transitions: [
+      {from:"q0", input:"a", pop:"Z", push:"AZ",  to:"q0"},
+      {from:"q0", input:"b", pop:"Z", push:"BZ",  to:"q0"},
+      {from:"q0", input:"a", pop:"A", push:"AA",  to:"q0"},
+      {from:"q0", input:"a", pop:"B", push:"AB",  to:"q0"},
+      {from:"q0", input:"b", pop:"A", push:"BA",  to:"q0"},
+      {from:"q0", input:"b", pop:"B", push:"BB",  to:"q0"},
+      {from:"q0", input:"ε", pop:"Z", push:"Z",   to:"q1"},
+      {from:"q0", input:"ε", pop:"A", push:"A",   to:"q1"},
+      {from:"q0", input:"ε", pop:"B", push:"B",   to:"q1"},
+      {from:"q1", input:"a", pop:"A", push:"",    to:"q1"},
+      {from:"q1", input:"b", pop:"B", push:"",    to:"q1"},
+      {from:"q1", input:"ε", pop:"Z", push:"Z",   to:"q2"},
+    ]
+  },
+  balanced: {
+    desc: "Accepts balanced parentheses — push '(' and pop when ')' is seen",
+    states: ["q0","q1"],
+    start: "q0",
+    accept: ["q1"],
+    stackAlpha: "Z, (",
+    examples: { accept: "(()())", reject: "(()" },
+    transitions: [
+      {from:"q0", input:"(", pop:"Z", push:"(Z", to:"q0"},
+      {from:"q0", input:"(", pop:"(", push:"((", to:"q0"},
+      {from:"q0", input:")", pop:"(", push:"",   to:"q0"},
+      {from:"q0", input:"ε", pop:"Z", push:"Z",  to:"q1"},
+    ]
+  },
+  anbncn: {
+    desc: "Accepts aⁿbⁿ (n ≥ 0) using empty stack acceptance — demonstrates ε-transitions",
+    states: ["q0","q1","q2"],
+    start: "q0",
+    accept: ["q2"],
+    stackAlpha: "Z, A",
+    examples: { accept: "aabb", reject: "aaab" },
+    transitions: [
+      {from:"q0", input:"ε", pop:"Z", push:"Z",  to:"q2"},
+      {from:"q0", input:"a", pop:"Z", push:"AZ", to:"q0"},
+      {from:"q0", input:"a", pop:"A", push:"AA", to:"q0"},
+      {from:"q0", input:"b", pop:"A", push:"",   to:"q1"},
+      {from:"q1", input:"b", pop:"A", push:"",   to:"q1"},
+      {from:"q1", input:"ε", pop:"Z", push:"Z",  to:"q2"},
+    ]
+  }
+};
+
+let pda, simState;
+
+function loadPDA() {
+  const key = document.getElementById('pdaSelect').value;
+  pda = PDAS[key];
+  document.getElementById('descBox').textContent = pda.desc;
+  document.getElementById('infoStates').textContent = pda.states.join(', ');
+  document.getElementById('infoStart').textContent = pda.start;
+  document.getElementById('infoAccept').textContent = pda.accept.join(', ');
+  document.getElementById('infoStack').textContent = pda.stackAlpha;
+  document.getElementById('inputStr').value = pda.examples.accept;
+  renderTransTable();
+  initSim();
+}
+
+function renderTransTable() {
+  const el = document.getElementById('transTable');
+  el.innerHTML = '';
+  pda.transitions.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'trans-row';
+    row.id = 'tr-' + i;
+    row.innerHTML = `<span>${t.from}</span><span>${t.input}</span><span>${t.pop}</span><span>${t.to}</span><span>${t.push || 'ε'}</span>`;
+    el.appendChild(row);
+  });
+}
+
+function initSim() {
+  if (!pda) { pda = PDAS['anbn']; renderTransTable(); }
+  const input = document.getElementById('inputStr').value.trim();
+  simState = {
+    state: pda.start,
+    input: input === '' ? [] : input.split(''),
+    head: 0,
+    stack: ['Z'],
+    done: false,
+    accepted: false,
+    lastTrans: -1,
+    steps: 0
+  };
+  document.getElementById('simLog').innerHTML = '';
+  document.getElementById('statusBadge').className = 'badge badge-running';
+  document.getElementById('statusBadge').textContent = 'running';
+  document.getElementById('stepCount').textContent = '0';
+  renderAll();
+  addLog('Loaded: "' + input + '" | Start state: ' + pda.start + ' | Stack: [Z]');
+}
+
+function findTransition(state, inputSym, stackTop) {
+  for (let i = 0; i < pda.transitions.length; i++) {
+    const t = pda.transitions[i];
+    if (t.from === state && t.input === inputSym && t.pop === stackTop) return i;
+  }
+  for (let i = 0; i < pda.transitions.length; i++) {
+    const t = pda.transitions[i];
+    if (t.from === state && t.input === 'ε' && t.pop === stackTop) return i;
+  }
+  return -1;
+}
+
+function stepSim() {
+  if (simState.done) return;
+  const s = simState;
+  const stackTop = s.stack[0] || '';
+  const inputSym = s.head < s.input.length ? s.input[s.head] : 'ε';
+
+  let ti = findTransition(s.state, inputSym, stackTop);
+  if (ti === -1 && inputSym !== 'ε') {
+    ti = findTransition(s.state, 'ε', stackTop);
+  }
+
+  if (ti === -1) {
+    s.done = true;
+    s.accepted = pda.accept.includes(s.state) && s.head >= s.input.length && (s.stack.length === 0 || s.stack[0] === 'Z');
+    const badge = document.getElementById('statusBadge');
+    badge.className = s.accepted ? 'badge badge-accept' : 'badge badge-reject';
+    badge.textContent = s.accepted ? 'ACCEPTED' : 'REJECTED';
+    addLog(s.accepted ? '==> String ACCEPTED ✓' : '==> No valid transition — REJECTED ✗');
+    renderAll();
+    return;
+  }
+
+  const t = pda.transitions[ti];
+  s.lastTrans = ti;
+  const prevState = s.state;
+  const prevHead = s.head;
+
+  if (t.input !== 'ε') s.head++;
+  s.stack.shift();
+  const pushSyms = t.push.split('').reverse();
+  pushSyms.forEach(sym => { if (sym) s.stack.unshift(sym); });
+  s.state = t.to;
+  s.steps++;
+  document.getElementById('stepCount').textContent = s.steps;
+
+  addLog(`Step ${s.steps}: (${prevState}, ${t.input === 'ε' ? 'ε' : t.input}, ${t.pop}) → (${t.to}, ${t.push || 'ε'}) | Stack: [${s.stack.join(',')}]`);
+
+  if (s.head >= s.input.length) {
+    const epsTi = findTransition(s.state, 'ε', s.stack[0] || '');
+    if (epsTi === -1) {
+      s.done = true;
+      s.accepted = pda.accept.includes(s.state) && (s.stack.length === 0 || s.stack[0] === 'Z');
+      const badge = document.getElementById('statusBadge');
+      badge.className = s.accepted ? 'badge badge-accept' : 'badge badge-reject';
+      badge.textContent = s.accepted ? 'ACCEPTED' : 'REJECTED';
+      addLog(s.accepted ? '==> String ACCEPTED ✓' : '==> REJECTED ✗');
+    }
+  }
+  renderAll();
+}
+
+function runAll() {
+  let guard = 0;
+  while (!simState.done && guard < 500) { stepSim(); guard++; }
+}
+
+function tryExample(type) {
+  const key = document.getElementById('pdaSelect').value;
+  document.getElementById('inputStr').value = PDAS[key].examples[type];
+  initSim();
+}
+
+function addLog(msg) {
+  const el = document.getElementById('simLog');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderAll() {
+  renderStates();
+  renderTape();
+  renderStack();
+  highlightTrans();
+}
+
+function renderStates() {
+  const el = document.getElementById('stateViz');
+  el.innerHTML = '';
+  pda.states.forEach((s, i) => {
+    const div = document.createElement('div');
+    const isAccept = pda.accept.includes(s);
+    const isActive = simState.state === s;
+    let cls = 'state-circle';
+    if (isAccept) cls += ' accept';
+    if (isActive) {
+      if (simState.done) cls += simState.accepted ? ' done-accept' : ' done-reject';
+      else cls += ' active';
+    }
+    div.className = cls;
+    div.textContent = s;
+    el.appendChild(div);
+    if (i < pda.states.length - 1) {
+      const a = document.createElement('span');
+      a.className = 'arrow';
+      a.textContent = '→';
+      el.appendChild(a);
+    }
+  });
+}
+
+function renderTape() {
+  const el = document.getElementById('tapeViz');
+  el.innerHTML = '';
+  const input = simState.input;
+  if (input.length === 0) {
+    el.innerHTML = '<span style="font-size:13px;color:var(--text3);">empty string (ε)</span>';
+    document.getElementById('headPos').textContent = 'end';
+    document.getElementById('remaining').textContent = 'ε';
+    return;
+  }
+  input.forEach((ch, i) => {
+    const cell = document.createElement('div');
+    let cls = 'tape-cell';
+    if (i === simState.head) cls += ' current';
+    else if (i < simState.head) cls += ' read';
+    cell.className = cls;
+    cell.textContent = ch;
+    el.appendChild(cell);
+  });
+  document.getElementById('headPos').textContent = simState.head >= input.length ? 'end' : simState.head;
+  document.getElementById('remaining').textContent = simState.head >= input.length ? 'ε (done)' : input.slice(simState.head).join('');
+}
+
+function renderStack() {
+  const el = document.getElementById('stackViz');
+  el.innerHTML = '';
+  if (simState.stack.length === 0) {
+    el.innerHTML = '<span style="font-size:13px;color:var(--text3);">empty</span>';
+    return;
+  }
+  simState.stack.forEach((sym, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'stack-cell' + (i === 0 ? ' top' : '');
+    cell.textContent = sym;
+    el.appendChild(cell);
+  });
+}
+
+function highlightTrans() {
+  document.querySelectorAll('.trans-row').forEach(r => r.classList.remove('highlight'));
+  if (simState.lastTrans >= 0) {
+    const row = document.getElementById('tr-' + simState.lastTrans);
+    if (row) { row.classList.add('highlight'); row.scrollIntoView({ block: 'nearest' }); }
+  }
+}
+
+loadPDA();
+</script>
+</body>
+</html>
